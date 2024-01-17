@@ -126,7 +126,7 @@ def main(args):
 
     if local_rank==0:
         if os.path.exists(f'{output_path}/{experiment_name}') == False:
-            os.mkdir(f'{output_path}/{experiment_name}')
+            os.makedirs(f'{output_path}/{experiment_name}', exist_ok=True)
         save_dict(os.path.join(f'{output_path}/{experiment_name}', 'args.csv'), args.__dict__)
 
     if net_type == 'backbone':
