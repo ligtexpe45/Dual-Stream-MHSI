@@ -41,7 +41,8 @@ def crop_spectral(img, spectral_channel=32):
 class Data_Generate_Bile(Dataset):
     def __init__(self, img_paths, seg_paths, transform=None,
                  channels=None, principal_bands_num=-1,
-                 cutting=-1, hyperhsi=False, cropspectral=-1):
+                 cutting=-1, hyperhsi=False, cropspectral=-1,
+                 envi_type='img', multi_class=1):
         self.img_paths = img_paths
         self.seg_paths = seg_paths
         self.hyperhsi = hyperhsi
@@ -50,16 +51,26 @@ class Data_Generate_Bile(Dataset):
         self.principal_bands_num = principal_bands_num
         self.cutting = cutting
         self.cropspectral = cropspectral
+        self.envi_type = envi_type
+        self.multi_class = multi_class
 
     def __getitem__(self, index):
         img_path = self.img_paths[index]
-        img = envi.open(img_path)[:, :, :]
+        img = envi.open(img_path, image=img_path.replace('hdr', self.envi_type))[:, :, :]
 
         mask_path = self.seg_paths[index]
-        mask = (cv2.imread(mask_path, 0) / 255).astype(np.uint8)
+        if mask_path.endswith('.npz'):
+            mask = np.load(mask_path)['gt']
+            mask[mask > 8] = 0
+        else:
+            mask = (cv2.imread(mask_path, 0) / 255).astype(np.uint8)
+
+        # if mask_path.endswith('.npz'):
+        #     mask = np.delete(mask, 445, 0)
+        #     img = np.delete(img, 445, 0)
+
         if img.shape[:2] != mask.shape[:2]:
             mask = cv2.resize(mask, (img.shape[1], img.shape[0]))
-
         if self.transform != None:
             img, mask = self.transform((img, mask))
         if self.cutting > 0:

@@ -9,6 +9,11 @@ def iou(y_hat, y):
     y =y.reshape(-1)
     return jaccard_score(y_hat, y)
 
+def multi_iou(y_hat, y):
+    y_hat = y_hat.reshape(-1)
+    y =y.reshape(-1)
+    return jaccard_score(y_hat, y, average='macro')
+
 def eval_f1score(pred, label):    
     final_score = f1_score(label, pred, average='macro')
     return final_score

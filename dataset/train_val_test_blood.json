@@ -1,0 +1,1 @@
+{"train": ["A_1.hdr", "E_1.hdr", "F_1a.hdr","B_1.hdr", "E_21.hdr", "F_1s.hdr", "F_7.hdr"], "val": ["C_1.hdr", "E_7.hdr", "F_2.hdr"], "test": ["D_1.hdr", "F_1.hdr", "F_21.hdr"]}

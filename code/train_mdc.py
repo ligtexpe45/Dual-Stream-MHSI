@@ -28,7 +28,7 @@ from Data_Generate import Data_Generate_Bile
 from argument import Transform
 from local_utils.misc import AverageMeter
 from local_utils.dice_bce_loss import Dice_BCE_Loss
-from local_utils.metrics import iou, dice, sensitivity, specificity, hausdorff_distance_case, eval_f1score
+from local_utils.metrics import iou, dice, sensitivity, specificity, hausdorff_distance_case, eval_f1score, multi_iou
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from timm.scheduler import CosineLRScheduler
 
@@ -61,6 +61,9 @@ def main(args):
     net_type = args.net
     principal_bands_num = args.principal_bands_num
     spectral_channels = args.spectral_channels
+
+    mask_extension = args.mask_extension
+    envi_type = args.envi_type
 
     lf = args.loss_function
     spectral_hidden_feature = args.spectral_hidden_feature
@@ -103,24 +106,27 @@ def main(args):
         print(f'the number of testfiles is {len(test_files)}')
 
     train_images_path = [os.path.join(images_root_path, i) for i in train_files]
-    train_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.png') for i in train_files]
+    train_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in train_files]
     val_images_path = [os.path.join(images_root_path, i) for i in val_files]
-    val_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.png') for i in val_files]
+    val_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in val_files]
     test_images_path = [os.path.join(images_root_path, i) for i in test_files]
-    test_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.png') for i in test_files]
+    test_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in test_files]
 
     train_db = Data_Generate_Bile(train_images_path, train_masks_path, transform=transform,
-                            principal_bands_num=principal_bands_num, cutting=cutting)
+                            principal_bands_num=principal_bands_num, cutting=cutting, envi_type=envi_type
+                                     , multi_class=classes)
     train_sampler = DistributedSampler(train_db)
     train_loader = DataLoader(train_db, sampler=train_sampler, batch_size=batch, num_workers=worker, drop_last=True)
 
     val_db = Data_Generate_Bile(val_images_path, val_masks_path, transform=val_transformer,
-                                principal_bands_num=principal_bands_num, cutting=cutting)
+                                principal_bands_num=principal_bands_num, cutting=cutting, envi_type=envi_type
+                                     , multi_class=classes)
     val_sampler = DistributedSampler(val_db)
     val_loader = DataLoader(val_db, sampler=val_sampler, batch_size=batch, shuffle=False, num_workers=worker, drop_last=False)
 
     test_db = Data_Generate_Bile(test_images_path, test_masks_path, transform=val_transformer,
-                                 principal_bands_num=principal_bands_num, cutting=cutting)
+                                 principal_bands_num=principal_bands_num, cutting=cutting, envi_type=envi_type
+                                     , multi_class=classes)
     test_sampler = DistributedSampler(test_db)
     test_loader = DataLoader(test_db, sampler=test_sampler, batch_size=batch, shuffle=False, num_workers=worker, drop_last=False)
 
@@ -170,7 +176,9 @@ def main(args):
     else:
         raise ValueError("Oops! That was no valid scheduler_type.Try again...")
 
-    if lf == 'dice':
+    if classes > 1:
+        criterion = torch.nn.CrossEntropyLoss()
+    elif lf == 'dice':
         criterion = DiceLoss()
     elif lf == 'dicebce':
         criterion = Dice_BCE_Loss(bce_weight=0.5, dice_weight=0.5)
@@ -256,9 +264,14 @@ def main(args):
                 outs.extend(out)
                 labels.extend(label)
         outs, labels = np.array(outs), np.array(labels)
-        outs = np.where(outs > 0.5, 1, 0)
-        val_iou = np.array([iou(l, o) for l, o in zip(labels, outs)]).mean()
-        val_dice = np.array([dice(l, o) for l, o in zip(labels, outs)]).mean()
+        if classes == 1:
+            outs = np.where(outs > 0.5, 1, 0)
+            val_iou = np.array([iou(l, o) for l, o in zip(labels, outs)]).mean()
+            val_dice = np.array([dice(l, o) for l, o in zip(labels, outs)]).mean()
+        else:
+            outs = np.argmax(outs, axis=1)
+            val_iou = np.array([multi_iou(l, o) for l, o in zip(labels, outs)]).mean()
+            val_dice = np.array([dice(np.where(l==b,1,0), np.where(o==b,1,0)) for l, o in zip(labels, outs) for b in np.unique(labels)]).mean()
 
         print('now start test ...')
         model.eval()
@@ -277,9 +290,14 @@ def main(args):
                 labels.extend(label)
 
         outs, labels = np.array(outs), np.array(labels)
-        outs = np.where(outs > 0.5, 1, 0)
-        test_iou = np.array([iou(l, o) for l, o in zip(labels, outs)]).mean()
-        test_dice = np.array([dice(l, o) for l, o in zip(labels, outs)]).mean()
+        if classes == 1:
+            outs = np.where(outs > 0.5, 1, 0)
+            test_iou = np.array([iou(l, o) for l, o in zip(labels, outs)]).mean()
+            test_dice = np.array([dice(l, o) for l, o in zip(labels, outs)]).mean()
+        else:
+            outs = np.argmax(outs, axis=1)
+            test_iou = np.array([multi_iou(l, o) for l, o in zip(labels, outs)]).mean()
+            test_dice = np.array([dice(np.where(l==b,1,0), np.where(o==b,1,0)) for l, o in zip(labels, outs) for b in np.unique(labels)]).mean()
 
         print('epoch {}/{}\t LR:{}\t train loss:{}\t val_dice:{}' \
               .format(epoch + 1, epochs, optimizer.param_groups[0]['lr'], train_losses.avg, val_dice))
@@ -364,6 +382,8 @@ if __name__ == '__main__':
     parser.add_argument('--net', '-n', default='dual', type=str, choices=['backbone', 'dual'])
     parser.add_argument('--backbone', '-backbone', default='resnet34', type=str)
     parser.add_argument('--attention_group', '-att_g', type=str, default='non', choices=['non', 'lowrank'])
+    parser.add_argument('--mask_extension', '-me', default='.png', type=str)
+    parser.add_argument('--envi_type', '-et', default='img', type=str)
     args = parser.parse_args()
 
     main(args)
