@@ -223,6 +223,8 @@ def main(args):
                 x1, label = x1.to(device), label.to(device)
 
                 out = model(x1)
+                if classes > 1:
+                    label = label.squeeze(1).long()
                 loss = criterion(out, label)
 
                 if use_half:
@@ -257,6 +259,8 @@ def main(args):
                 x1, label = x1.to(device), label.to(device)
 
                 out = model(x1)
+                if classes > 1:
+                    label = label.squeeze(1).long()
                 loss = criterion(out, label)
 
                 val_losses.update(loss.item())
@@ -285,6 +289,8 @@ def main(args):
                 x1, label = x1.to(device), label.to(device)
 
                 out = model(x1)
+                if classes > 1:
+                    label = label.squeeze(1).long()
                 out, label = out.cpu().detach().numpy(), label.cpu().detach().numpy()
                 outs.extend(out)
                 labels.extend(label)
