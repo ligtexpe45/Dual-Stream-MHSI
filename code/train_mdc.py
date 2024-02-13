@@ -388,7 +388,7 @@ if __name__ == '__main__':
     parser.add_argument('--net', '-n', default='dual', type=str, choices=['backbone', 'dual'])
     parser.add_argument('--backbone', '-backbone', default='resnet34', type=str)
     parser.add_argument('--attention_group', '-att_g', type=str, default='non', choices=['non', 'lowrank'])
-    parser.add_argument('--mask_extension', '-me', default='.png', type=str)
+    parser.add_argument('--mask_extension', '-me', default='png', type=str)
     parser.add_argument('--envi_type', '-et', default='img', type=str)
     args = parser.parse_args()
 
