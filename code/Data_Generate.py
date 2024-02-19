@@ -64,9 +64,16 @@ class Data_Generate_Bile(Dataset):
             mask[mask > 8] = 0
         elif mask_path.endswith('.hdr'):
             mask = envi.open(mask_path, image=mask_path.replace('.hdr', ''))[:, :, 0]
+            mask = np.squeeze(mask)
         else:
             mask = (cv2.imread(mask_path, 0) / 255).astype(np.uint8)
 
+
+        if mask_path.endswith('.hdr'):
+            img = img[:160, :160, :300]
+            mask = mask[:160, :160]
+
+        # print(img.shape, mask.shape)
         # if mask_path.endswith('.npz'):
         #     mask = np.delete(mask, 445, 0)
         #     img = np.delete(img, 445, 0)
