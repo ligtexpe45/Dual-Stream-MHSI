@@ -56,12 +56,14 @@ class Data_Generate_Bile(Dataset):
 
     def __getitem__(self, index):
         img_path = self.img_paths[index]
-        img = envi.open(img_path, image=img_path.replace('hdr', self.envi_type))[:, :, :]
+        img = envi.open(img_path, image=img_path.replace('.hdr', self.envi_type))[:, :, :]
 
         mask_path = self.seg_paths[index]
         if mask_path.endswith('.npz'):
             mask = np.load(mask_path)['gt']
             mask[mask > 8] = 0
+        elif mask_path.endswith('.hdr'):
+            mask = envi.open(mask_path, image=mask_path.replace('.hdr', ''))[:, :, 0]
         else:
             mask = (cv2.imread(mask_path, 0) / 255).astype(np.uint8)
 

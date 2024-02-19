@@ -101,6 +101,7 @@ class merge_block(nn.Module):
         spa_input = rearrange(spa_input, '(b g) c h w -> b g c h w', g=self.bands_group)
         spe2spa_input = reduce(spe_input, 'b c (s1 p) h w -> b s1 c h w', 'mean',
                                p=self.merge_spe_downsample)
+        # print(spa_input.shape, spe2spa_input.shape)
         spa_input = self.merge_conv_spa(
             rearrange(torch.cat((spa_input, spe2spa_input), 2), 'b g c h w -> (b g) c h w'))
 
