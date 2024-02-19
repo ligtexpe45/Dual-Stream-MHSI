@@ -83,6 +83,8 @@ def main(args):
     hw = args.hw
     rank = args.rank
     attention_group = args.attention_group
+    dataset = args.dataset
+
     torch.cuda.set_device(local_rank)
     device = torch.device('cuda', local_rank)
     torch.distributed.init_process_group(backend='nccl')
@@ -105,12 +107,20 @@ def main(args):
         print(f'the number of valfiles is {len(val_files)}')
         print(f'the number of testfiles is {len(test_files)}')
 
-    train_images_path = [os.path.join(images_root_path, i) for i in train_files]
-    train_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in train_files]
-    val_images_path = [os.path.join(images_root_path, i) for i in val_files]
-    val_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in val_files]
-    test_images_path = [os.path.join(images_root_path, i) for i in test_files]
-    test_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in test_files]
+    if dataset == "brain":
+        train_images_path = [os.path.join(images_root_path, i, i, "raw.hdr") for i in train_files]
+        train_masks_path = [os.path.join(mask_root_path, i, i, "gtMap.hdr") for i in train_files]
+        val_images_path = [os.path.join(images_root_path, i, i, "raw.hdr") for i in val_files]
+        val_masks_path = [os.path.join(mask_root_path, i, i, "gtMap.hdr") for i in val_files]
+        test_images_path = [os.path.join(images_root_path, i, i, "raw.hdr") for i in test_files]
+        test_masks_path = [os.path.join(mask_root_path, i, i, "gtMap.hdr") for i in test_files]
+    else:
+        train_images_path = [os.path.join(images_root_path, i) for i in train_files]
+        train_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in train_files]
+        val_images_path = [os.path.join(images_root_path, i) for i in val_files]
+        val_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in val_files]
+        test_images_path = [os.path.join(images_root_path, i) for i in test_files]
+        test_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in test_files]
 
     train_db = Data_Generate_Bile(train_images_path, train_masks_path, transform=transform,
                             principal_bands_num=principal_bands_num, cutting=cutting, envi_type=envi_type
@@ -390,6 +400,7 @@ if __name__ == '__main__':
     parser.add_argument('--attention_group', '-att_g', type=str, default='non', choices=['non', 'lowrank'])
     parser.add_argument('--mask_extension', '-me', default='png', type=str)
     parser.add_argument('--envi_type', '-et', default='img', type=str)
+    parser.add_argument('--dataset', '-d', default='MDC', type=str)
     args = parser.parse_args()
 
     main(args)
