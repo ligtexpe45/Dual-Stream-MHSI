@@ -42,7 +42,7 @@ class Data_Generate_Bile(Dataset):
     def __init__(self, img_paths, seg_paths, transform=None,
                  channels=None, principal_bands_num=-1,
                  cutting=-1, hyperhsi=False, cropspectral=-1,
-                 envi_type='img', multi_class=1):
+                 envi_type='.img', multi_class=1):
         self.img_paths = img_paths
         self.seg_paths = seg_paths
         self.hyperhsi = hyperhsi
