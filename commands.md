@@ -7,7 +7,7 @@ CUDA_VISIBLE_DEVICES=0 torchrun code/train_mdc.py  -dd /mnt/Windows/cv_projects/
 ```
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 torchrun code/train_mdc.py  -dd /mnt/Windows/cv_projects/Dual-Stream-MHSI/dataset/brain_small.json -r /mnt/Windows/cv_projects/Brain -b 1 -spe_c 300 -b_group 75 -link_p 0 0 1 0 1 0 -sdr 4 4 -hw 160 160 -msd 4 4 -name Dual_MHSI_3 -c 5 --dataset brain -et ''
+CUDA_VISIBLE_DEVICES=0 torchrun code/train_mdc.py  -dd /mnt/Windows/cv_projects/Dual-Stream-MHSI/dataset/brain_small.json -r /mnt/Windows/cv_projects/Brain -b 1 -spe_c 300 -b_group 75 -link_p 0 0 1 0 1 0 -sdr 4 4 -hw 320 320 -msd 4 4 -name Dual_MHSI_3 -c 5 --dataset brain -et ''
 ```
 
 **b_group** has to equal to **spe_c** / **msd[0]**

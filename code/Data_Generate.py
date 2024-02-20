@@ -70,8 +70,10 @@ class Data_Generate_Bile(Dataset):
 
 
         if mask_path.endswith('.hdr'):
-            img = img[:160, :160, :300]
-            mask = mask[:160, :160]
+            h = 320
+            img = img[:, :, :300]
+            img = cv2.resize(img, (h, h))
+            mask = cv2.resize(mask, (h, h), interpolation=cv2.INTER_NEAREST)
 
         # print(img.shape, mask.shape)
         # if mask_path.endswith('.npz'):
