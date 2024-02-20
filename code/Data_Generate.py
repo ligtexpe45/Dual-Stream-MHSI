@@ -71,8 +71,9 @@ class Data_Generate_Bile(Dataset):
 
         if mask_path.endswith('.hdr'):
             h = 320
-            img = img[:, :, :300]
-            img = cv2.resize(img, (h, h))
+            selected_channels = np.linspace(0, img.shape[2] - 1, 300, dtype=int)
+            img = img[:, :, :selected_channels]
+            img = cv2.resize(img, (h, h), interpolation=cv2.INTER_NEAREST)
             mask = cv2.resize(mask, (h, h), interpolation=cv2.INTER_NEAREST)
 
         # print(img.shape, mask.shape)

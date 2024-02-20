@@ -315,8 +315,8 @@ def main(args):
             test_iou = np.array([multi_iou(l, o) for l, o in zip(labels, outs)]).mean()
             test_dice = np.array([dice(np.where(l==b,1,0), np.where(o==b,1,0)) for l, o in zip(labels, outs) for b in np.unique(labels)]).mean()
 
-        print('epoch {}/{}\t LR:{}\t train loss:{}\t val_dice:{}' \
-              .format(epoch + 1, epochs, optimizer.param_groups[0]['lr'], train_losses.avg, val_dice))
+        print('epoch {}/{}\t LR:{}\t train loss:{}\t val_dice:{} \t val_iou:{}'
+              .format(epoch + 1, epochs, optimizer.param_groups[0]['lr'], train_losses.avg, val_dice, val_iou))
 
         history['train_loss'].append(reduce_tensor(train_losses.avg))
         history['val_loss'].append(reduce_tensor(val_losses.avg))
