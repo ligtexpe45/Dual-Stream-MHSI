@@ -33,7 +33,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from timm.scheduler import CosineLRScheduler
 
 def reduce_tensor(tensor):
-    rt = torch.tensor(tensor).cuda()
+    rt = torch.tensor(tensor, dtype=torch.float32).cuda()
     dist.all_reduce(rt, op=dist.reduce_op.SUM)
     rt /= torch.cuda.device_count()
     return rt.cpu().numpy()
