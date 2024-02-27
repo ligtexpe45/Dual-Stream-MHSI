@@ -16,6 +16,7 @@ import random
 import math
 from sklearn.metrics import normalized_mutual_info_score
 import warnings
+import tiff
 warnings.filterwarnings('ignore')
 
 def cutting_img_mask(img, mask, cutting=224):
