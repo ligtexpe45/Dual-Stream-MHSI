@@ -114,6 +114,13 @@ def main(args):
         val_masks_path = [os.path.join(root_path, i, i, "gtMap.hdr") for i in val_files]
         test_images_path = [os.path.join(root_path, i, i, "raw.hdr") for i in test_files]
         test_masks_path = [os.path.join(root_path, i, i, "gtMap.hdr") for i in test_files]
+    elif dataset == "dental":
+        train_images_path = [os.path.join(root_path, i+".tif") for i in train_files]
+        train_masks_path = [os.path.join(root_path, i+"_masks.tif") for i in train_files]
+        val_images_path = [os.path.join(root_path, i+".tif") for i in val_files]
+        val_masks_path = [os.path.join(root_path, i+"_masks.tif") for i in val_files]
+        test_images_path = [os.path.join(root_path, i+".tif") for i in test_files]
+        test_masks_path = [os.path.join(root_path, i+"_masks.tif") for i in test_files]
     else:
         train_images_path = [os.path.join(images_root_path, i) for i in train_files]
         train_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in train_files]

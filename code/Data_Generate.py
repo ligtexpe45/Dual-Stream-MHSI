@@ -56,7 +56,14 @@ class Data_Generate_Bile(Dataset):
 
     def __getitem__(self, index):
         img_path = self.img_paths[index]
-        img = envi.open(img_path, image=img_path.replace('.hdr', self.envi_type))[:, :, :]
+        if img_path.endswith('.hdr'):
+            img = envi.open(img_path, image=img_path.replace('.hdr', self.envi_type))[:, :, :]
+        elif img_path.endswith('.tif'):
+            x, _, _, _ = tiff.read_stiff(img_path)
+            x = cv2.resize(x, (320, 256), interpolation=cv2.INTER_NEAREST)
+            chosen_channels = np.linspace(0, x.shape[2] - 1, num=40, dtype=int)
+            new_x = [x[:, :, channel] for channel in chosen_channels]
+            img = np.stack(new_x, axis=2)
 
         mask_path = self.seg_paths[index]
         if mask_path.endswith('.npz'):
@@ -65,6 +72,10 @@ class Data_Generate_Bile(Dataset):
         elif mask_path.endswith('.hdr'):
             mask = envi.open(mask_path, image=mask_path.replace('.hdr', ''))[:, :, 0]
             mask = np.squeeze(mask)
+        elif mask_path.endswith('.tif'):
+            masks = tiff.read_mtiff(mask_path)
+            y_seg = tiff.mtiff_to_2d_arr(masks)
+            mask = cv2.resize(y_seg, (320, 256), interpolation=cv2.INTER_NEAREST)
         else:
             mask = (cv2.imread(mask_path, 0) / 255).astype(np.uint8)
 
