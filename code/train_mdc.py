@@ -30,6 +30,8 @@ from local_utils.misc import AverageMeter
 from local_utils.dice_bce_loss import Dice_BCE_Loss
 from local_utils.metrics import iou, dice, sensitivity, specificity, hausdorff_distance_case, eval_f1score, multi_iou
 from torch.optim.lr_scheduler import CosineAnnealingLR
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
 from timm.scheduler import CosineLRScheduler
 
 def reduce_tensor(tensor):
@@ -84,6 +86,7 @@ def main(args):
     rank = args.rank
     attention_group = args.attention_group
     dataset = args.dataset
+    remove_cm_values = args.remove_cm_values
 
     torch.cuda.set_device(local_rank)
     device = torch.device('cuda', local_rank)
@@ -205,6 +208,8 @@ def main(args):
     history = {'epoch': [], 'LR': [], 'train_loss': [], 'val_loss': [], 'val_iou': [],
                'val_dice': [], 'test_iou':[], 'test_dice':[], }
 
+    confusion_matrix_history = []
+
     ############## shut down train with save model and safely exit
     stop_training = False
 
@@ -214,6 +219,10 @@ def main(args):
         stop_training = True
         history_pd = pd.DataFrame(history)
         history_pd.to_csv(os.path.join(f'{output_path}/{experiment_name}', 'log.csv'), index=False)
+
+        cm_pd = pd.concat(confusion_matrix_history, keys=range(1, epoch + 2))
+        cm_pd.to_csv(os.path.join(f'{output_path}/{experiment_name}', f'confusion_matrix.csv'), index_label=['Epoch'],
+                     index=True)
 
     signal.signal(signal.SIGINT, sigint_handler)
     # install AverageMeter calss in order to caculate loss and score(iou)
@@ -336,6 +345,9 @@ def main(args):
         history['epoch'].append(epoch + 1)
         history['LR'].append(optimizer.param_groups[0]['lr'])
 
+        cm = confusion_matrix(labels.flatten(), outs.flatten(), labels=range(classes))
+        confusion_matrix_history.append(pd.DataFrame(cm, index=range(classes), columns=range(classes)))
+
         if scheduler_type == 'warmup':
             scheduler.step(epoch)
         else:
@@ -357,10 +369,20 @@ def main(args):
                                     f'best_epoch{epoch}_dice{best_val:.4f}.pth'))
             save_path = os.path.join(f'{args.output}/{args.experiment_name}',
                                      f'best_epoch{epoch}_dice{best_val:.4f}.pth')
+            best_outs = outs
+            best_labels = labels
+            confusion_matrix_history[-1].to_csv(os.path.join(f'{output_path}/{experiment_name}', f'best_confusion_matrix.csv'))
 
         if local_rank == 0:
             history_pd = pd.DataFrame(history)
             history_pd.to_csv(os.path.join(f'{output_path}/{experiment_name}', f'log.csv'), index=False)
+
+            # save confusion matrix history as csv file
+            cm_pd = pd.concat(confusion_matrix_history, keys=range(1, epoch+2))
+            cm_pd.to_csv(os.path.join(f'{output_path}/{experiment_name}', f'confusion_matrix.csv'), index_label=['Epoch'], index=True)
+
+    ConfusionMatrixDisplay.from_predictions(best_labels.flatten(), best_outs.flatten(), display_labels=np.unique(best_labels), include_values=remove_cm_values)
+    plt.show()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -408,6 +430,7 @@ if __name__ == '__main__':
     parser.add_argument('--mask_extension', '-me', default='png', type=str)
     parser.add_argument('--envi_type', '-et', default='.img', type=str)
     parser.add_argument('--dataset', '-d', default='MDC', type=str)
+    parser.add_argument('--remove_cm_values', '-rcm', action='store_false', default=True)
     args = parser.parse_args()
 
     main(args)
