@@ -251,7 +251,11 @@ def main(args):
                 out = model(x1)
                 if classes > 1:
                     label = label.squeeze(1).long()
-                loss = criterion(out, label)
+                if dataset == "brain":
+                    hasLabel = (label != 0).long()
+                    loss = criterion(out * hasLabel, label * hasLabel)
+                else:
+                    loss = criterion(out, label)
 
                 if use_half:
                     with amp.scale_loss(loss, optimizer) as scaled_loss:
@@ -299,7 +303,11 @@ def main(args):
             val_iou = np.array([iou(l, o) for l, o in zip(labels, outs)]).mean()
             val_dice = np.array([dice(l, o) for l, o in zip(labels, outs)]).mean()
         else:
+            if dataset == "brain":
+                outs[:, 0] = 0
             outs = np.argmax(outs, axis=1)
+            if dataset == "brain":
+                outs[labels == 0] = 0
             val_iou = np.array([multi_iou(l, o) for l, o in zip(labels, outs)]).mean()
             val_dice = np.array([dice(np.where(l==b,1,0), np.where(o==b,1,0)) for l, o in zip(labels, outs) for b in np.unique(labels)]).mean()
 
@@ -327,7 +335,11 @@ def main(args):
             test_iou = np.array([iou(l, o) for l, o in zip(labels, outs)]).mean()
             test_dice = np.array([dice(l, o) for l, o in zip(labels, outs)]).mean()
         else:
+            if dataset == "brain":
+                outs[:, 0] = 0
             outs = np.argmax(outs, axis=1)
+            if dataset == "brain":
+                outs[labels == 0] = 0
             test_iou = np.array([multi_iou(l, o) for l, o in zip(labels, outs)]).mean()
             test_dice = np.array([dice(np.where(l==b,1,0), np.where(o==b,1,0)) for l, o in zip(labels, outs) for b in np.unique(labels)]).mean()
 
