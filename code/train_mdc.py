@@ -252,8 +252,8 @@ def main(args):
                 if classes > 1:
                     label = label.squeeze(1).long()
                 if dataset == "brain":
-                    hasLabel = (label != 0).long()
-                    loss = criterion(out * hasLabel, label * hasLabel)
+                    hasLabel = (label != 0).unsqueeze(1).long()
+                    loss = criterion(out * hasLabel, label)
                 else:
                     loss = criterion(out, label)
 
@@ -291,7 +291,11 @@ def main(args):
                 out = model(x1)
                 if classes > 1:
                     label = label.squeeze(1).long()
-                loss = criterion(out, label)
+                if dataset == "brain":
+                    hasLabel = (label != 0).unsqueeze(1).long()
+                    loss = criterion(out * hasLabel, label)
+                else:
+                    loss = criterion(out, label)
 
                 val_losses.update(loss.item())
                 out, label = out.cpu().detach().numpy(), label.cpu().detach().numpy()
